@@ -106,6 +106,7 @@ C-----------------------------------------------------------------------
       REAL, DIMENSION(2) :: HARVFRAC   !Harvest & byproduct fractions
       TYPE (FertType) FERTDATA         !Fertilizer application
       TYPE (OrgMatAppType)OMAData      !Organic matter application
+      TYPE (BiochType)    BiochData    !Biochar C and N pools
 
 C-----------------------------------------------------------------------
 !!     Temporary timer function
@@ -173,7 +174,8 @@ C-----------------------------------------------------------------------
      &    FLOODN, FLOODWAT, MULCH, UPFLOW,                !I/O
      &    NH4_plant, NO3_plant, SKi_AVAIL, SNOW,          !Output
      &    SPi_AVAIL, SOILPROP, SomLitC, SomLitE,          !Output
-     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND)        !Output
+     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND,         !Output
+     &    BiochData)                                       !Output (biochar)
 
 C-----------------------------------------------------------------------
 C     Read initial soil-plant-atmosphere data
@@ -243,7 +245,8 @@ C-----------------------------------------------------------------------
      &    FLOODN, FLOODWAT, MULCH, UPFLOW,                !I/O
      &    NH4_plant, NO3_plant, SKi_AVAIL, SNOW,          !Output
      &    SPi_AVAIL, SOILPROP, SomLitC, SomLitE,          !Output
-     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND)        !Output
+     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND,         !Output
+     &    BiochData)                                       !Output (biochar)
 
 C-----------------------------------------------------------------------
 C     Seasonal initialization for soil-plant-atmosphere processes
@@ -314,7 +317,8 @@ C-----------------------------------------------------------------------
      &    FLOODN, FLOODWAT, MULCH, UPFLOW,                !I/O
      &    NH4_plant, NO3_plant, SKi_AVAIL, SNOW,          !Output
      &    SPi_AVAIL, SOILPROP, SomLitC, SomLitE,          !Output
-     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND)        !Output
+     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND,         !Output
+     &    BiochData)                                       !Output (biochar)
 
 C-----------------------------------------------------------------------
 C     Call Soil-plant-atmosphere module to determine today's
@@ -362,7 +366,8 @@ C-----------------------------------------------------------------------
      &    FLOODN, FLOODWAT, MULCH, UPFLOW,                !I/O
      &    NH4_plant, NO3_plant, SKi_AVAIL, SNOW,          !Output
      &    SPi_AVAIL, SOILPROP, SomLitC, SomLitE,          !Output
-     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND)        !Output
+     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND,         !Output
+     &    BiochData)                                       !Output (biochar)
 
 C-----------------------------------------------------------------------
 C     Compute cumulative totals for soil-plant-atmosphere processes
@@ -419,7 +424,8 @@ C***********************************************************************
      &    FLOODN, FLOODWAT, MULCH, UPFLOW,                !I/O
      &    NH4_plant, NO3_plant, SKi_AVAIL, SNOW,          !Output
      &    SPi_AVAIL, SOILPROP, SomLitC, SomLitE,          !Output
-     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND)        !Output
+     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND,         !Output
+     &    BiochData)                                       !Output (biochar)
 
         CALL SPAM(CONTROL, ISWITCH,
      &    CANHT, EORATIO, KSEVAP, KTRANS, MULCH,          !Input
@@ -469,7 +475,8 @@ C     Print seasonal summaries and close files.
      &    FLOODN, FLOODWAT, MULCH, UPFLOW,                !I/O
      &    NH4_plant, NO3_plant, SKi_AVAIL, SNOW,          !Output
      &    SPi_AVAIL, SOILPROP, SomLitC, SomLitE,          !Output
-     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND)        !Output
+     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND,         !Output
+     &    BiochData)                                       !Output (biochar)
 
       CALL SPAM(CONTROL, ISWITCH,
      &    CANHT, EORATIO, KSEVAP, KTRANS, MULCH,          !Input
@@ -544,7 +551,8 @@ C***********************************************************************
      &    FLOODN, FLOODWAT, MULCH, UPFLOW,                !I/O
      &    NH4_plant, NO3_plant, SKi_AVAIL, SNOW,          !Output
      &    SPi_AVAIL, SOILPROP, SomLitC, SomLitE,          !Output
-     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND)        !Output
+     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND,         !Output
+     &    BiochData)                                       !Output (biochar)
 
 !!     Temporary timer function
 !      CALL DATE_AND_TIME (VALUES=DATE_TIME)

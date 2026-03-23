@@ -567,6 +567,22 @@ C-----------------------------------------------------------------------
 C
 C-----------------------------------------------------------------------
 
+C-----------------------------------------------------------------------
+C     Biochar applications (new section for recalcitrant C amendments)
+C     Written only when at least one biochar application exists.
+C     Format: @B  BCDATE  BCAMT  BCDEP  BCCN BCTYPE
+C-----------------------------------------------------------------------
+      IF (NBCHAR .GT. 0) THEN
+        WRITE (LUNIO,'(/,"*BIOCHAR APPLICATIONS",/,
+     &    "@B  BCDATE  BCAMT  BCDEP  BCCN BCTYPE")')
+        DO I = 1, NBCHAR
+          WRITE (LUNIO, 110, IOSTAT=ERRNUM) LNBIO, BCDAY(I),
+     &          BCAMT(I), BCDEP(I), BCCN(I), BCTYPE(I)
+          IF (ERRNUM .NE. 0) CALL ERROR (ERRKEY,ERRNUM,FILEIOH,LUNIO)
+        END DO
+      ENDIF
+  110 FORMAT (I3, I7, 1X, F6.0, 1X, F6.1, 1X, F6.1, 1X, A5)
+
       CLOSE(LUNIO)
       RETURN
       END SUBROUTINE OPTEMPXY2K

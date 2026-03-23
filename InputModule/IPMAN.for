@@ -851,3 +851,105 @@ C-----------------------------------------------------------------------
  55   FORMAT (I3,A2,1X,A6,1X,A16)
 
       END SUBROUTINE IPCUL
+
+C=======================================================================
+C  IPBIOCH, Subroutine
+C
+C  Reads biochar application data from the *BIOCHAR section of FILEX.
+C  Biochar is a recalcitrant soil carbon amendment; applications are
+C  specified separately from regular organic matter residues.
+C-----------------------------------------------------------------------
+C  Revision history
+C  03/23/2026 Written - new biochar module support
+C-----------------------------------------------------------------------
+C  Called : IPEXP
+C  Calls  : ERROR, FIND, IGNORE, Y4K_DOY
+C=======================================================================
+
+      SUBROUTINE IPBIOCH (LUNEXP, FILEX, LNBIO, YRSIM,
+     &     NBCHAR, BCDAY, BCAMT, BCDEP, BCCN, BCTYPE, LNSIM)
+
+      USE ModuleDefs
+      IMPLICIT NONE
+      EXTERNAL ERROR, FIND, IGNORE, Y4K_DOY
+
+      CHARACTER*1  ISECT_DUMMY
+      CHARACTER*5  BCTYPE(NAPPL)
+      CHARACTER*6  ERRKEY, FINDCH
+      CHARACTER*12 FILEX
+      CHARACTER*80 CHARTEST
+
+      INTEGER LUNEXP, LNBIO, YRSIM, LNSIM
+      INTEGER NBCHAR, BCDAY(NAPPL)
+      INTEGER ERRNUM, IFIND, ISECT, LN, LINEXP, NBCAP
+
+      REAL    BCAMT(NAPPL), BCDEP(NAPPL), BCCN(NAPPL)
+
+      PARAMETER (ERRKEY = 'IPBIOC')
+
+!     Initialize outputs
+      NBCHAR = 0
+      DO LN = 1, NAPPL
+        BCDAY(LN)  = 0
+        BCAMT(LN)  = 0.0
+        BCDEP(LN)  = 0.0
+        BCCN(LN)   = 50.0   !Default C:N ratio for wood biochar
+        BCTYPE(LN) = 'WOOD '
+      END DO
+
+      IF (LNBIO .LE. 0) RETURN   !No biochar section in this treatment
+
+      FINDCH = '*BIOCH'
+      NBCAP  = 1
+
+      CALL FIND (LUNEXP, FINDCH, LINEXP, IFIND)
+      IF (IFIND .EQ. 0) CALL ERROR (ERRKEY, 1, FILEX, LINEXP)
+
+ 50   CALL IGNORE (LUNEXP, LINEXP, ISECT, CHARTEST)
+
+      IF (ISECT .EQ. 1) THEN
+        READ (CHARTEST, 60, IOSTAT=ERRNUM) LN
+        IF (ERRNUM .NE. 0) CALL ERROR (ERRKEY, ERRNUM, FILEX, LINEXP)
+        IF (LN .NE. LNBIO) GO TO 50
+
+        READ (CHARTEST, 60, IOSTAT=ERRNUM) LN, BCDAY(NBCAP),
+     &        BCAMT(NBCAP), BCDEP(NBCAP), BCCN(NBCAP), BCTYPE(NBCAP)
+        IF (ERRNUM .NE. 0) CALL ERROR (ERRKEY, ERRNUM, FILEX, LINEXP)
+
+!       Validate amount
+        BCAMT(NBCAP) = MAX(BCAMT(NBCAP), 0.0)
+        BCDEP(NBCAP) = MAX(BCDEP(NBCAP), 0.0)
+        BCCN(NBCAP)  = MAX(BCCN(NBCAP),  1.0)
+
+!       Convert 2-digit year dates (Y4K_DOY handles Y2K/Y4K conversion)
+        CALL Y4K_DOY (BCDAY(NBCAP), FILEX, LINEXP, ERRKEY, 3)
+
+        IF (BCDAY(NBCAP) .LT. YRSIM .AND. LNSIM .EQ. 0) THEN
+          CALL ERROR (ERRKEY, 3, FILEX, LINEXP)
+        ENDIF
+
+        NBCHAR = NBCAP
+        NBCAP  = NBCAP + 1
+        IF (NBCAP .GT. NAPPL) GO TO 120
+      ELSE
+        IF (NBCAP .EQ. 1) THEN
+          CALL ERROR (ERRKEY, 2, FILEX, LINEXP)
+        ENDIF
+        GO TO 120
+      ENDIF
+      GO TO 50
+
+ 120  REWIND (LUNEXP)
+      NBCAP = MAX((NBCAP - 1), 0)
+
+      RETURN
+
+C-----------------------------------------------------------------------
+C     Format Strings
+C     Columns: LN(I3), BCDAY(I7), BCAMT(F6.0), BCDEP(F6.1),
+C              BCCN(F6.1), BCTYPE(A5)
+C-----------------------------------------------------------------------
+
+ 60   FORMAT (I3, I7, 1X, F6.0, 1X, F6.1, 1X, F6.1, 1X, A5)
+
+      END SUBROUTINE IPBIOCH
