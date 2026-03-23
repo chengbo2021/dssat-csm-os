@@ -33,7 +33,7 @@
 !                 unused variables, shorten lines. 
 C=====================================================================
 
-      SUBROUTINE SOIL(CONTROL, ISWITCH, 
+      SUBROUTINE SOIL(CONTROL, ISWITCH,
      &    ES, FERTDATA, FracRts, HARVRES, IRRAMT,         !Input
      &    KTRANS, KUptake, OMAData, PUptake, RLV,         !Input
      &    SENESCE, ST, SWDELTX,TILLVALS, UNH4, UNO3,      !Input
@@ -41,14 +41,16 @@ C=====================================================================
      &    FLOODN, FLOODWAT, MULCH, UPFLOW,                !I/O
      &    NH4_plant, NO3_plant, SKi_AVAIL, SNOW,          !Output
      &    SPi_AVAIL, SOILPROP, SomLitC, SomLitE,          !Output
-     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND)        !Output
+     &    SW, SWDELTS, SWDELTU, UPPM, WINF, YREND,        !Output
+     &    BiochData)                                      !Output (biochar)
 
 !-----------------------------------------------------------------------
       USE ModuleDefs
       USE FloodModule
       USE GHG_mod
       IMPLICIT NONE
-      EXTERNAL SOILDYN, WATBAL, CENTURY, SoilOrg, SoilNi, SoilPi, SoilKi
+      EXTERNAL SOILDYN, WATBAL, CENTURY, SoilOrg, SoilNi, SoilPi,
+     &  SoilKi, BIOCHAR
       SAVE
 !-----------------------------------------------------------------------
 !     Interface variables:
@@ -96,6 +98,7 @@ C=====================================================================
       REAL               , INTENT(OUT) :: WINF
       REAL, DIMENSION(NL), INTENT(OUT) :: UPPM
       INTEGER            , INTENT(OUT) :: YREND
+      TYPE (BiochType)   , INTENT(OUT) :: BiochData  !Biochar state output
 
 !-----------------------------------------------------------------------
 !     Local variables:
@@ -176,9 +179,14 @@ C=====================================================================
      &    SPi_AVAIL, SPi_Labile, YREND)                   !Output
 
 !     Inorganic K
-      CALL SoilKi(CONTROL, ISWITCH, 
+      CALL SoilKi(CONTROL, ISWITCH,
      &    FERTDATA, KUptake, SOILPROP, TILLVALS,          !Input
      &    SKi_Avail)                                      !Output
+
+!     Biochar dynamics
+      CALL BIOCHAR(CONTROL, ISWITCH,
+     &    SOILPROP, ST, SW,                               !Input
+     &    BiochData)                                      !Output
 
       IF (DYNAMIC == SEASINIT) THEN
 !       Soil water balance -- call last for initialization

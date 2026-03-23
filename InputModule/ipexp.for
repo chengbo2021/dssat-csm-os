@@ -70,10 +70,10 @@ C=======================================================================
       USE ModuleData    
       Use CsvOutput   ! VSH
       IMPLICIT NONE
-      EXTERNAL ERROR, FIND, WARNING, YR_DOY, IGNORE, VERIFY, CLEAR, 
-     &  IGNORE2, OPHEAD, MAKEFILEW, IPCUL, IPPLNT_INP, IPSIM, PATH, 
-     &  GET_CROPD, IPFLD, IPENV, IPHAR, IPIRR, IPFERT, IPRES, IPCHEM, 
-     &  IPTILL
+      EXTERNAL ERROR, FIND, WARNING, YR_DOY, IGNORE, VERIFY, CLEAR,
+     &  IGNORE2, OPHEAD, MAKEFILEW, IPCUL, IPPLNT_INP, IPSIM, PATH,
+     &  GET_CROPD, IPFLD, IPENV, IPHAR, IPIRR, IPFERT, IPRES, IPCHEM,
+     &  IPTILL, IPBIOCH
 
       SAVE
 
@@ -100,6 +100,7 @@ C=======================================================================
       INTEGER I,L,NLOOP,LINF,ISECT,LUNEXP,LUNLST
       INTEGER LNFLD,LNSA,LNIC,LNPLT,LNIR,LNFER,LNRES,LNCHE,LNCU
       INTEGER LNHAR,LNENV,LNTIL,LNSIM,LINEXP
+!     LNBIO is declared in COMIBS.blk common block /IBS05/ (no local decl)
       INTEGER NYRS,FROP,EXPN,EXPP,TRTN,ERRNUM,IFIND,FTYPEN
       INTEGER PATHL,RUN,ISIM,TRTALL,IIRV(NAPPL)   !,CRID
       INTEGER NFORC,NDOF,PMTYPE,YR,ROTN
@@ -151,6 +152,8 @@ C     DS(L) can be interactively modified in the sensitivity analysis
 !      END DO
 
 C-----------------------------------------------------------------------
+      LNBIO  = 0   !Initialize COMIBS /IBS05/ biochar line number
+
       NLOOP = 0
       IF (RUN .EQ. 1) THEN
          EXPN   = 1
@@ -294,11 +297,11 @@ C-----------------------------------------------------------------------
             IF (RNMODE .EQ. 'Q') THEN
               READ (CHARTEST,56,IOSTAT=ERRNUM)TRTNO,ROTNO,ROTOPT,CRPNO,
      &              TITLET,LNCU,LNFLD,LNSA,LNIC,LNPLT,LNIR,LNFER,LNRES,
-     &              LNCHE,LNTIL,LNENV,LNHAR,LNSIM
-            ELSE 
+     &              LNCHE,LNTIL,LNENV,LNHAR,LNSIM,LNBIO
+            ELSE
               READ (CHARTEST,55,IOSTAT=ERRNUM)TRTNO,ROTNO,ROTOPT,CRPNO,
      &              TITLET,LNCU,LNFLD,LNSA,LNIC,LNPLT,LNIR,LNFER,LNRES,
-     &              LNCHE,LNTIL,LNENV,LNHAR,LNSIM
+     &              LNCHE,LNTIL,LNENV,LNHAR,LNSIM,LNBIO
             ENDIF
             IF (ERRNUM .NE. 0) CALL ERROR (ERRKEY,ERRNUM,FILEX,LINEXP)
             IF (MOD(I,16) .EQ. 0 .AND. RNMODE .EQ. 'I') THEN
@@ -391,11 +394,11 @@ C-----------------------------------------------------------------------
       IF (RNMODE .EQ. 'Q') THEN
         READ (CHARTEST,56,IOSTAT=ERRNUM) TRTNO,ROTNO,ROTOPT,CRPNO,
      &     TITLET,LNCU,LNFLD,LNSA,LNIC,LNPLT,LNIR,LNFER,LNRES,
-     &     LNCHE,LNTIL,LNENV,LNHAR,LNSIM
+     &     LNCHE,LNTIL,LNENV,LNHAR,LNSIM,LNBIO
       ELSE
         READ (CHARTEST,55,IOSTAT=ERRNUM) TRTNO,ROTNO,ROTOPT,CRPNO,
      &     TITLET,LNCU,LNFLD,LNSA,LNIC,LNPLT,LNIR,LNFER,LNRES,
-     &     LNCHE,LNTIL,LNENV,LNHAR,LNSIM
+     &     LNCHE,LNTIL,LNENV,LNHAR,LNSIM,LNBIO
       ENDIF
       IF (ERRNUM .NE. 0) CALL ERROR (ERRKEY,ERRNUM,FILEX,LINEXP)
 
@@ -855,6 +858,14 @@ C-----------------------------------------------------------------------
       CALL IPTILL (LUNEXP,FILEX,LNTIL,YRSIM,ISWTIL,NTIL,TDATE,
      &    TIMPL,TDEP,LNSIM)
 
+C-----------------------------------------------------------------------
+C     Call IPBIOCH - Biochar applications (stores data in COMIBS /IBS05/)
+C     LNBIO is the biochar section line number from the treatment table.
+C     If zero, no biochar section is referenced for this treatment.
+C-----------------------------------------------------------------------
+      CALL IPBIOCH (LUNEXP,FILEX,LNBIO,YRSIM,
+     &    NBCHAR,BCDAY,BCAMT,BCDEP,BCCN,BCTYPE,LNSIM)
+
       CLOSE(LUNEXP)
       RETURN
 
@@ -862,8 +873,8 @@ C-----------------------------------------------------------------------
 C     FORMAT Strings
 C-----------------------------------------------------------------------
 
-   55 FORMAT (I3,I1,2(1X,I1),1X,A25,14I3)
-   56 FORMAT (2I2,2(1X,I1),1X,A25,14I3)
+   55 FORMAT (I3,I1,2(1X,I1),1X,A25,15I3)
+   56 FORMAT (2I2,2(1X,I1),1X,A25,15I3)
 
    75 FORMAT (A4,I2.2,A6)
    76 FORMAT (3A4)

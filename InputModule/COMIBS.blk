@@ -41,6 +41,17 @@
       REAL    CHAMT(NAPPL),CHDEP(NAPPL),TDEP(NAPPL)
       REAL    PMALB  !Albedo of plastic bed cover
 
+!     Biochar application arrays (read from *BIOCHAR section in FILEX)
+      CHARACTER*5  BCTYPE(NAPPL)   !Biochar feedstock type code
+      INTEGER NBCHAR               !Number of biochar applications
+      INTEGER LNBIO                !Treatment line number for biochar
+      INTEGER BCDAY(NAPPL)         !Biochar application dates (YRDOY)
+      REAL    BCAMT(NAPPL)         !Biochar application amount (kg DM/ha)
+      REAL    BCDEP(NAPPL)         !Incorporation depth (cm); 0=surface
+      REAL    BCCN(NAPPL)          !C:N ratio of applied biochar
+
+      COMMON /IBS05/ NBCHAR,LNBIO,BCDAY,BCAMT,BCDEP,BCCN,BCTYPE
+
       COMMON /IBS01/ PLME,PLDS,DFDRN,FLST,
      &               FLDNAM,ISIMI,TITSIM,IOFF,IAME,
      &               NCODE,NEND,DAYFAC,RADFAC,TXFAC,TMFAC,

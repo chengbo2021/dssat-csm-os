@@ -304,6 +304,19 @@ C             CHP Added TRTNUM to CONTROL variable.
       END TYPE OrgMatAppType
 
 !======================================================================
+!     Biochar application and state data
+!     BiochType holds the biochar pools per soil layer and cumulative
+!     application totals used by the BIOCHAR soil module.
+      TYPE BiochType
+        INTEGER NApBioch           !Number of biochar applications (total)
+        INTEGER BiochDat           !Date of most recent biochar application
+        REAL, DIMENSION(NL) :: BiochC  !Biochar C pool (kg[C]/ha/layer)
+        REAL, DIMENSION(NL) :: BiochN  !Biochar N pool (kg[N]/ha/layer)
+        REAL CumBiochC             !Cumulative biochar C applied (kg[C]/ha)
+        REAL CumBiochN             !Cumulative biochar N applied (kg[N]/ha)
+      END TYPE BiochType
+
+!======================================================================
 !     Plant stresses for environmental stress summary
       Type PlStresType
         INTEGER NSTAGES   !# of stages (max 5)

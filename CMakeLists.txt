@@ -626,6 +626,8 @@ set(
         "Soil/SoilWater/WATBAL.for"
         "Soil/SoilWater/WBAL.for"
         "Soil/SoilWater/WBSUBS.for"
+        "Soil/Biochar/BIOCHAR.for"
+        "Soil/Biochar/OpBiochar.for"
         "SPAM/ESR_SoilEvap.for"
         "SPAM/ETPHOT.for"
         "SPAM/ETPHR.for"
