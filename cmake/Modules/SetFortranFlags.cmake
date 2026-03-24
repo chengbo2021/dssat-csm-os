@@ -134,13 +134,6 @@ IF (APPLE)
 ELSE ()
         SET_COMPILE_FLAG(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}"
                          Fortran "/FORCE"               # MSVC
-                                 "-static"              # GNU
-                        )
-        SET_COMPILE_FLAG(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}"
-                         Fortran "-static-libgcc"       # GNU
-                        )
-        SET_COMPILE_FLAG(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}"
-                         Fortran "-static-libgfortran"  # GNU
                         )
 ENDIF(APPLE)
 ###################
