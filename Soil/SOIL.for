@@ -102,7 +102,7 @@ C=====================================================================
 
 !-----------------------------------------------------------------------
 !     Local variables:
-      INTEGER DYNAMIC
+      INTEGER DYNAMIC, L
       CHARACTER*1  MESOM
 
       REAL, DIMENSION(0:NL) :: newCO2 !DayCent
@@ -187,6 +187,18 @@ C=====================================================================
       CALL BIOCHAR(CONTROL, ISWITCH,
      &    SOILPROP, ST, SW,                               !Input
      &    BiochData)                                      !Output
+
+!     Apply biochar water-retention adjustment to DUL
+!     DDUL_BC(L) is zero until biochar is applied; adding it here keeps
+!     WATBAL consistent without modifying SOILDYN internals.
+      IF (DYNAMIC == INTEGR) THEN
+        DO L = 1, SOILPROP % NLAYR
+          SOILPROP % DUL(L) = SOILPROP % DUL(L)
+     &                       + BiochData % DDUL_BC(L)
+          SOILPROP % DUL(L) = MIN(SOILPROP % DUL(L),
+     &                            SOILPROP % SAT(L))
+        END DO
+      END IF
 
       IF (DYNAMIC == SEASINIT) THEN
 !       Soil water balance -- call last for initialization
