@@ -98,7 +98,7 @@ C=====================================================================
       REAL               , INTENT(OUT) :: WINF
       REAL, DIMENSION(NL), INTENT(OUT) :: UPPM
       INTEGER            , INTENT(OUT) :: YREND
-      TYPE (BiochType)   , INTENT(OUT) :: BiochData  !Biochar state output
+      TYPE (BiochType)   , INTENT(INOUT) :: BiochData  !Biochar state
 
 !-----------------------------------------------------------------------
 !     Local variables:
@@ -110,7 +110,7 @@ C=====================================================================
       REAL, DIMENSION(NL) :: SPi_Labile, NO3, NH4
       REAL, DIMENSION(0:NL) :: LITC, SSOMC
       REAL, DIMENSION(0:NL,NELEM) :: IMM, MNR
-      
+
 !     Added for tile drainage:
       REAL TDFC
       INTEGER TDLNO
@@ -119,19 +119,39 @@ C=====================================================================
       REAL DRAIN
       TYPE (CH4_type) CH4_data
 
+!     Base soil pH from file (saved at RUNINIT; never changes from SOILDYN)
+      REAL, DIMENSION(NL), SAVE :: BasePH_soil
+
 !-----------------------------------------------------------------------
 !     Transfer values from constructed data types into local variables.
       DYNAMIC = CONTROL % DYNAMIC
       MESOM   = ISWITCH % MESOM
 
 !***********************************************************************
-!     Call Soil Dynamics module 
+!     Call Soil Dynamics module
 !      IF (DYNAMIC < OUTPUT) THEN
-        CALL SOILDYN(CONTROL, ISWITCH, 
+        CALL SOILDYN(CONTROL, ISWITCH,
      &    KTRANS, MULCH, SomLit, SomLitC, SW, TILLVALS,   !Input
      &    WEATHER, XHLAI,                                 !Input
      &    SOILPROP)                                       !Output
 !      ENDIF
+
+!     Save base soil pH once at run initialization (SOILDYN only sets PH
+!     during RUNINIT and never resets it afterwards).
+      IF (DYNAMIC .EQ. RUNINIT) THEN
+        BasePH_soil(1:SOILPROP % NLAYR) = SOILPROP % PH(1:SOILPROP%NLAYR)
+      END IF
+
+!     Apply biochar-induced pH increment (uses previous day's DeltaPH;
+!     1-day lag is negligible for this slow process).
+      IF (DYNAMIC .EQ. RATE .OR. DYNAMIC .EQ. INTEGR
+     &    .OR. DYNAMIC .EQ. OUTPUT) THEN
+        DO L = 1, SOILPROP % NLAYR
+          SOILPROP % PH(L) = BasePH_soil(L)
+     &                      + BiochData % DeltaPH(L)
+          SOILPROP % PH(L) = MIN(SOILPROP % PH(L), 9.0)
+        END DO
+      END IF
 
 !     Call WATBAL first for all except seasonal initialization
       IF (DYNAMIC /= SEASINIT) THEN

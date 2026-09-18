@@ -319,6 +319,8 @@ C             CHP Added TRTNUM to CONTROL variable.
         REAL CumBiochN             !Cumulative biochar N applied (kg[N]/ha)
         !  Water retention adjustment per layer (m3 m-3)
         REAL, DIMENSION(NL) :: DDUL_BC  !Biochar-induced DUL increase
+        !  pH increment per layer (pH units)
+        REAL, DIMENSION(NL) :: DeltaPH  !Biochar-induced pH increase
       END TYPE BiochType
 
 !======================================================================
