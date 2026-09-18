@@ -184,7 +184,8 @@ C=====================================================================
       ENDIF
 
 !     Inorganic N (formerly NTRANS)
-      CALL SoilNi (CONTROL, ISWITCH, 
+      CALL SoilNi (CONTROL, ISWITCH,
+     &    BiochData % dSorbNH4,                           !Input (biochar)
      &    CH4_data, DRN, ES, FERTDATA, FLOODWAT, IMM,     !Input
      &    LITC, MNR, newCO2, SNOW, SOILPROP, SSOMC, ST,   !Input
      &    SW, TDFC, TDLNO, TILLVALS, UNH4, UNO3, UPFLOW,  !Input
@@ -205,7 +206,7 @@ C=====================================================================
 
 !     Biochar dynamics
       CALL BIOCHAR(CONTROL, ISWITCH,
-     &    SOILPROP, ST, SW,                               !Input
+     &    NH4, SOILPROP, ST, SW,                          !Input
      &    BiochData)                                      !Output
 
 !     Apply biochar water-retention adjustment to DUL

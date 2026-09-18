@@ -39,7 +39,7 @@
 !=======================================================================
 
       SUBROUTINE BIOCHAR (CONTROL, ISWITCH,
-     &    SOILPROP, ST, SW,                               !Input
+     &    NH4, SOILPROP, ST, SW,                          !Input
      &    BiochData)                                      !Output
 
 !-----------------------------------------------------------------------
@@ -53,6 +53,7 @@
 !-----------------------------------------------------------------------
       TYPE (ControlType), INTENT(IN)  :: CONTROL
       TYPE (SwitchType),  INTENT(IN)  :: ISWITCH
+      REAL, DIMENSION(NL), INTENT(IN) :: NH4    !NH4 pool (kg N/ha/layer)
       TYPE (SoilType),    INTENT(IN)  :: SOILPROP
       REAL, DIMENSION(NL), INTENT(IN) :: ST     !Soil temperature (deg C)
       REAL, DIMENSION(NL), INTENT(IN) :: SW     !Volumetric soil water
@@ -118,11 +119,23 @@
 !     Maximum biochar-induced pH increase (prevents runaway in sandy soils)
       REAL, PARAMETER :: PH_MAX_DLT = 2.0
 
+!     NH4 sorption parameters
+!     Max NH4 sorption per kg biochar DM (Chen et al. 2019 review)
+      REAL, PARAMETER :: SORP_F_NH4 = 0.005  !kg N / kg biochar
+!     Linear sorption coefficient (fraction of NH4 sorbed at half capacity)
+      REAL, PARAMETER :: KD_NH4     = 0.10
+!     Rate constant for approach to sorption equilibrium (/day)
+      REAL, PARAMETER :: K_EQ_SORP  = 0.30
+
+!     NH4 sorption state (SAVE'd - persists between calls)
+      REAL, DIMENSION(NL) :: SorbNH4_L   !Sorbed NH4 per layer (kg N/ha)
+
 !     Soil properties
       REAL, DIMENSION(NL) :: DLAYR, DUL, DS, BD
 
 !     Water retention and pH working variables
       REAL BiochMass_L, BC_vol_frac, BC_mass_frac
+      REAL SorbMax_L, SorbEq_L, dSorb_L
 
       LOGICAL BIOC_WRITE
 
@@ -168,8 +181,15 @@
           BiochData % BiochCL(L) = 0.0
           BiochData % BiochCS(L) = 0.0
           BiochData % BiochN(L)  = 0.0
-          BiochData % DDUL_BC(L) = 0.0
-          BiochData % DeltaPH(L) = 0.0
+          BiochData % DDUL_BC(L)  = 0.0
+          BiochData % DeltaPH(L)  = 0.0
+          BiochData % SorbNH4(L)  = 0.0
+          BiochData % SorbP(L)    = 0.0
+          BiochData % SorbK(L)    = 0.0
+          BiochData % dSorbNH4(L) = 0.0
+        END DO
+        DO L = 1, NL
+          SorbNH4_L(L) = 0.0
         END DO
         NApSched = 0
 
@@ -226,7 +246,8 @@
         IF (BIOC_WRITE) THEN
           CALL OpBiochar (CONTROL, ISWITCH,
      &        0.0, 0.0, BiochCL_L, BiochCS_L, BiochN_L,
-     &        dBiochC, 0, 0.0, 0.0, BiochData % DeltaPH, NLAYR)
+     &        dBiochC, 0, 0.0, 0.0, BiochData % DeltaPH,
+     &        SorbNH4_L, NLAYR)
         END IF
 
 !***********************************************************************
@@ -332,6 +353,16 @@
             BiochData % DeltaPH(L) = 0.0
           END IF
 
+!         NH4 sorption: linear approach to equilibrium (1-day lag)
+          SorbMax_L = SORP_F_NH4 * BiochMass_L
+          SorbEq_L  = MIN(SorbMax_L, KD_NH4 * NH4(L))
+          dSorb_L   = K_EQ_SORP * (SorbEq_L - SorbNH4_L(L))
+          IF (dSorb_L .LT. 0.0)
+     &      dSorb_L = MAX(dSorb_L, -SorbNH4_L(L))
+          SorbNH4_L(L)            = SorbNH4_L(L) + dSorb_L
+          BiochData % SorbNH4(L)  = SorbNH4_L(L)
+          BiochData % dSorbNH4(L) = dSorb_L
+
 !         Update output data type
           BiochData % BiochCL(L) = BiochCL_L(L)
           BiochData % BiochCS(L) = BiochCS_L(L)
@@ -358,7 +389,7 @@
      &        BiochC_Total, BiochN_Total, BiochCL_L, BiochCS_L,
      &        BiochN_L, dBiochC, BiochData % NApBioch,
      &        BiochData % CumBiochC, BiochData % CumBiochN,
-     &        BiochData % DeltaPH, NLAYR)
+     &        BiochData % DeltaPH, SorbNH4_L, NLAYR)
         END IF
 
 !***********************************************************************
@@ -372,7 +403,7 @@
      &        0.0, 0.0, BiochCL_L, BiochCS_L, BiochN_L,
      &        dBiochC, BiochData % NApBioch,
      &        BiochData % CumBiochC, BiochData % CumBiochN,
-     &        BiochData % DeltaPH, NLAYR)
+     &        BiochData % DeltaPH, SorbNH4_L, NLAYR)
         END IF
 
       END IF  !DYNAMIC
