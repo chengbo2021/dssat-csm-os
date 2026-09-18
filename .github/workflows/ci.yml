@@ -31,10 +31,11 @@ jobs:
 
       - name: Build
         run: |
+          set -o pipefail
           cd build
           make -j$(nproc) 2>&1 | tee build.log
-          # Fail if binary was not produced
-          test -f dscsm048
+          # Binary is placed in bin/ subdirectory (CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+          test -f bin/dscsm048
 
       - name: Upload build log on failure
         if: failure()
