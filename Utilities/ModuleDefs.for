@@ -310,10 +310,15 @@ C             CHP Added TRTNUM to CONTROL variable.
       TYPE BiochType
         INTEGER NApBioch           !Number of biochar applications (total)
         INTEGER BiochDat           !Date of most recent biochar application
-        REAL, DIMENSION(NL) :: BiochC  !Biochar C pool (kg[C]/ha/layer)
-        REAL, DIMENSION(NL) :: BiochN  !Biochar N pool (kg[N]/ha/layer)
+        !  Two-pool decomposition model
+        REAL, DIMENSION(NL) :: BiochC   !Total biochar C (kg[C]/ha/layer)
+        REAL, DIMENSION(NL) :: BiochCL  !Labile biochar C pool (kg[C]/ha)
+        REAL, DIMENSION(NL) :: BiochCS  !Stable biochar C pool (kg[C]/ha)
+        REAL, DIMENSION(NL) :: BiochN   !Biochar N pool (kg[N]/ha/layer)
         REAL CumBiochC             !Cumulative biochar C applied (kg[C]/ha)
         REAL CumBiochN             !Cumulative biochar N applied (kg[N]/ha)
+        !  Water retention adjustment per layer (m3 m-3)
+        REAL, DIMENSION(NL) :: DDUL_BC  !Biochar-induced DUL increase
       END TYPE BiochType
 
 !======================================================================

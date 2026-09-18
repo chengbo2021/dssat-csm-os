@@ -1,0 +1,28 @@
+*BIOCHAR FEEDSTOCK PROPERTIES
+! DSSAT v4.8; 03/2026
+!
+! Properties used by the BIOCHAR soil module to parameterise the
+! two-pool decomposition model and water-retention effect.
+!
+! Fields:
+!  CODE    5-char feedstock code used in the *BIOCHAR section of FILEX
+!  CF_DM   Carbon fraction of dry mass (g C / g DM)
+!  FLABIL  Labile fraction of total biochar C (fast-decomposing pool)
+!  CN_DEF  Default C:N ratio if not supplied in FILEX (use 0 to require user)
+!  DESCRIPTION
+!
+! Scientific basis:
+!  CF_DM   : Mukherjee & Lal (2013), Lehmann & Joseph (2015)
+!  FLABIL  : Zimmerman (2010) -- labile fraction ~5-15% depending on
+!            feedstock; higher for manure/green waste, lower for wood.
+!  CN_DEF  : Typical ranges from Spokas et al. (2012)
+!
+@CODE  CF_DM  FLABIL  CN_DEF  DESCRIPTION
+WOOD   0.750  0.050    400.0  Wood biochar (hardwood, high temp)
+SOFWD  0.700  0.070    300.0  Softwood biochar
+STRAW  0.650  0.090    200.0  Crop straw biochar (wheat, rice)
+CROP   0.650  0.080    200.0  Generic crop residue biochar
+MANUR  0.550  0.130     50.0  Manure-derived biochar
+GREEN  0.600  0.110     80.0  Green waste / compost biochar
+SEWAG  0.520  0.150     30.0  Sewage sludge biochar
+DFLT   0.600  0.080    200.0  Default biochar (use when CODE unknown)
