@@ -319,6 +319,15 @@ C             CHP Added TRTNUM to CONTROL variable.
         REAL CumBiochN             !Cumulative biochar N applied (kg[N]/ha)
         !  Water retention adjustment per layer (m3 m-3)
         REAL, DIMENSION(NL) :: DDUL_BC  !Biochar-induced DUL increase
+        !  pH increment per layer (pH units)
+        REAL, DIMENSION(NL) :: DeltaPH  !Biochar-induced pH increase
+        !  Nutrient sorption pools and daily fluxes
+        REAL, DIMENSION(NL) :: SorbNH4   !Sorbed NH4 pool (kg N/ha)
+        REAL, DIMENSION(NL) :: SorbP     !Sorbed P pool   (kg P/ha)
+        REAL, DIMENSION(NL) :: SorbK     !Sorbed K pool   (kg K/ha)
+        REAL, DIMENSION(NL) :: dSorbNH4  !Net NH4 sorption today (+ve=sorb)
+        !  Priming effect multiplier on SOM-N mineralization
+        REAL, DIMENSION(NL) :: BC_PrimeFac !SOM decomp multiplier (1=no effect)
       END TYPE BiochType
 
 !======================================================================

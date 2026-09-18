@@ -24,7 +24,8 @@
 
       SUBROUTINE OpBiochar (CONTROL, ISWITCH,
      &    BiochC_Total, BiochN_Total, BiochCL_L, BiochCS_L, BiochN_L,
-     &    dBiochC, NApBioch, CumBiochC, CumBiochN, NLAYR)
+     &    dBiochC, NApBioch, CumBiochC, CumBiochN, DeltaPH_L,
+     &    SorbNH4_L, NLAYR)
 
 !-----------------------------------------------------------------------
       USE ModuleDefs
@@ -46,6 +47,8 @@
       INTEGER,            INTENT(IN) :: NApBioch
       REAL,               INTENT(IN) :: CumBiochC
       REAL,               INTENT(IN) :: CumBiochN
+      REAL, DIMENSION(NL),INTENT(IN) :: DeltaPH_L    !pH increment/layer
+      REAL, DIMENSION(NL),INTENT(IN) :: SorbNH4_L   !sorbed NH4/layer
       INTEGER,            INTENT(IN) :: NLAYR
 
 !-----------------------------------------------------------------------
@@ -58,7 +61,7 @@
       INTEGER LUNIT
       INTEGER L
       REAL    BCMinC_Total
-      REAL    BCLbl_Total, BCStb_Total
+      REAL    BCLbl_Total, BCStb_Total, DPH1, SorbNH4_Tot
 
       LOGICAL FEXIST
       DATA LUNIT / 0 /
@@ -89,7 +92,8 @@
         WRITE (LUNIT, '(/,A,I4)') '! Simulation run: ', CONTROL % RUN
         WRITE (LUNIT, '(A)')
      &    '@YEAR DOY   DAS   BIOCHC    BCLBL    BCSTB'//
-     &    '   BIOCHN   BCMINC NAPBIO    CUMBCC    CUMBCN'
+     &    '   BIOCHN   BCMINC  DPH_L1  SORBNH4 NAPBIO    CUMBCC'//
+     &    '    CUMBCN'
 
         CLOSE (LUNIT)
         RETURN
@@ -104,10 +108,13 @@
         BCMinC_Total = 0.0
         BCLbl_Total  = 0.0
         BCStb_Total  = 0.0
+        SorbNH4_Tot  = 0.0
+        DPH1 = DeltaPH_L(1)
         DO L = 1, NLAYR
           BCMinC_Total = BCMinC_Total + dBiochC(L)
           BCLbl_Total  = BCLbl_Total  + BiochCL_L(L)
           BCStb_Total  = BCStb_Total  + BiochCS_L(L)
+          SorbNH4_Tot  = SorbNH4_Tot  + SorbNH4_L(L)
         END DO
 
         OPEN (LUNIT, FILE = 'BIOCHAR.OUT', STATUS = 'OLD',
@@ -115,10 +122,10 @@
 
         WRITE (LUNIT, 100) YRDOY/1000, MOD(YRDOY,1000), DAS,
      &      BiochC_Total, BCLbl_Total, BCStb_Total,
-     &      BiochN_Total, BCMinC_Total,
+     &      BiochN_Total, BCMinC_Total, DPH1, SorbNH4_Tot,
      &      NApBioch, CumBiochC, CumBiochN
 
- 100    FORMAT (I5,1X,I3,1X,I5,5(1X,F8.2),1X,I6,2(1X,F9.2))
+ 100    FORMAT (I5,1X,I3,1X,I5,7(1X,F8.2),1X,I6,2(1X,F9.2))
 
         CLOSE (LUNIT)
         RETURN

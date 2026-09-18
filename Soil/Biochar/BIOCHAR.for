@@ -39,7 +39,7 @@
 !=======================================================================
 
       SUBROUTINE BIOCHAR (CONTROL, ISWITCH,
-     &    SOILPROP, ST, SW,                               !Input
+     &    NH4, SOILPROP, ST, SW,                          !Input
      &    BiochData)                                      !Output
 
 !-----------------------------------------------------------------------
@@ -53,6 +53,7 @@
 !-----------------------------------------------------------------------
       TYPE (ControlType), INTENT(IN)  :: CONTROL
       TYPE (SwitchType),  INTENT(IN)  :: ISWITCH
+      REAL, DIMENSION(NL), INTENT(IN) :: NH4    !NH4 pool (kg N/ha/layer)
       TYPE (SoilType),    INTENT(IN)  :: SOILPROP
       REAL, DIMENSION(NL), INTENT(IN) :: ST     !Soil temperature (deg C)
       REAL, DIMENSION(NL), INTENT(IN) :: SW     !Volumetric soil water
@@ -111,11 +112,36 @@
 !     Empirical DUL increase per unit biochar volume fraction
       REAL, PARAMETER :: WR_COEF = 0.04
 
+!     pH feedback parameters
+!     Empirical pH increase per unit biochar mass fraction (Biederman &
+!     Harpole 2013 meta-analysis; ~0.3 pH unit per 10 t/ha in top 10 cm)
+      REAL, PARAMETER :: PH_COEF    = 40.0
+!     Maximum biochar-induced pH increase (prevents runaway in sandy soils)
+      REAL, PARAMETER :: PH_MAX_DLT = 2.0
+
+!     Priming effect parameters
+!     Empirical SOM decomp multiplier per unit biochar mass fraction
+!     (Maestrini et al. 2015 meta-analysis: ~5-15% at typical rates)
+      REAL, PARAMETER :: PRIME_COEF = 10.0   !multiplier per kg/kg fraction
+      REAL, PARAMETER :: PRIME_CAP  = 0.20   !maximum priming magnitude
+
+!     NH4 sorption parameters
+!     Max NH4 sorption per kg biochar DM (Chen et al. 2019 review)
+      REAL, PARAMETER :: SORP_F_NH4 = 0.005  !kg N / kg biochar
+!     Linear sorption coefficient (fraction of NH4 sorbed at half capacity)
+      REAL, PARAMETER :: KD_NH4     = 0.10
+!     Rate constant for approach to sorption equilibrium (/day)
+      REAL, PARAMETER :: K_EQ_SORP  = 0.30
+
+!     NH4 sorption state (SAVE'd - persists between calls)
+      REAL, DIMENSION(NL) :: SorbNH4_L   !Sorbed NH4 per layer (kg N/ha)
+
 !     Soil properties
       REAL, DIMENSION(NL) :: DLAYR, DUL, DS, BD
 
-!     Water retention working variables
-      REAL BiochMass_L, BC_vol_frac
+!     Water retention and pH working variables
+      REAL BiochMass_L, BC_vol_frac, BC_mass_frac
+      REAL SorbMax_L, SorbEq_L, dSorb_L
 
       LOGICAL BIOC_WRITE
 
@@ -161,7 +187,16 @@
           BiochData % BiochCL(L) = 0.0
           BiochData % BiochCS(L) = 0.0
           BiochData % BiochN(L)  = 0.0
-          BiochData % DDUL_BC(L) = 0.0
+          BiochData % DDUL_BC(L)  = 0.0
+          BiochData % DeltaPH(L)  = 0.0
+          BiochData % SorbNH4(L)    = 0.0
+          BiochData % SorbP(L)      = 0.0
+          BiochData % SorbK(L)      = 0.0
+          BiochData % dSorbNH4(L)   = 0.0
+          BiochData % BC_PrimeFac(L) = 1.0
+        END DO
+        DO L = 1, NL
+          SorbNH4_L(L) = 0.0
         END DO
         NApSched = 0
 
@@ -218,7 +253,8 @@
         IF (BIOC_WRITE) THEN
           CALL OpBiochar (CONTROL, ISWITCH,
      &        0.0, 0.0, BiochCL_L, BiochCS_L, BiochN_L,
-     &        dBiochC, 0, 0.0, 0.0, NLAYR)
+     &        dBiochC, 0, 0.0, 0.0, BiochData % DeltaPH,
+     &        SorbNH4_L, NLAYR)
         END IF
 
 !***********************************************************************
@@ -296,16 +332,14 @@
           BiochCS_L(L) = MAX(BiochCS_L(L) - dBiochCS(L), 0.0)
           BiochN_L(L)  = MAX(BiochN_L(L)  - dBiochN(L),  0.0)
 
-!         Water-retention effect
-!         BC dry mass per layer (kg/ha) back-calculated from C pool
+!         Biochar dry mass back-calculated from C pool
           BiochMass_L = 0.0
           IF (BiochCL_L(L) + BiochCS_L(L) .GT. 0.0) THEN
-!           Use CF from BiochData if available, else default 0.6
             BiochMass_L = (BiochCL_L(L) + BiochCS_L(L)) / 0.60
           END IF
 
-!         Convert kg/ha to kg/m3 in this layer
-!         Layer volume = DLAYR(cm)/100 m * 10000 m2/ha = 100*DLAYR m3/ha
+!         Water-retention effect
+!         BC volume fraction = mass [kg/ha] / (100*DLAYR [m3/ha] * rho_BC)
           IF (DLAYR(L) .GT. 0.0) THEN
             BC_vol_frac = (BiochMass_L / (100.0 * DLAYR(L)))
      &                    / BC_BULK_DENS
@@ -314,6 +348,38 @@
           END IF
 
           BiochData % DDUL_BC(L) = WR_COEF * BC_vol_frac
+
+!         pH feedback
+!         BC mass fraction (kg/kg) = BC_mass [kg/ha] / soil_mass [kg/ha]
+!         Soil mass = BD [g/cm3] * DLAYR [cm] * 1e5  [kg/ha per cm layer]
+          IF (BD(L) .GT. 0.0 .AND. DLAYR(L) .GT. 0.0) THEN
+            BC_mass_frac = BiochMass_L / (BD(L) * DLAYR(L) * 1.0E5)
+            BiochData % DeltaPH(L) = MIN(PH_COEF * BC_mass_frac,
+     &                                   PH_MAX_DLT)
+          ELSE
+            BiochData % DeltaPH(L) = 0.0
+          END IF
+
+!         NH4 sorption: linear approach to equilibrium (1-day lag)
+          SorbMax_L = SORP_F_NH4 * BiochMass_L
+          SorbEq_L  = MIN(SorbMax_L, KD_NH4 * NH4(L))
+          dSorb_L   = K_EQ_SORP * (SorbEq_L - SorbNH4_L(L))
+          IF (dSorb_L .LT. 0.0)
+     &      dSorb_L = MAX(dSorb_L, -SorbNH4_L(L))
+          SorbNH4_L(L)            = SorbNH4_L(L) + dSorb_L
+          BiochData % SorbNH4(L)  = SorbNH4_L(L)
+          BiochData % dSorbNH4(L) = dSorb_L
+
+!         Priming effect: proportional to biochar mass fraction
+!         Positive priming (stimulated SOM decomp) common at typical rates
+          IF (BD(L) .GT. 0.0 .AND. DLAYR(L) .GT. 0.0) THEN
+            BiochData % BC_PrimeFac(L) =
+     &          1.0 + MIN(PRIME_COEF * BC_mass_frac, PRIME_CAP)
+            BiochData % BC_PrimeFac(L) =
+     &          MAX(BiochData % BC_PrimeFac(L), 1.0 - PRIME_CAP)
+          ELSE
+            BiochData % BC_PrimeFac(L) = 1.0
+          END IF
 
 !         Update output data type
           BiochData % BiochCL(L) = BiochCL_L(L)
@@ -340,7 +406,8 @@
           CALL OpBiochar (CONTROL, ISWITCH,
      &        BiochC_Total, BiochN_Total, BiochCL_L, BiochCS_L,
      &        BiochN_L, dBiochC, BiochData % NApBioch,
-     &        BiochData % CumBiochC, BiochData % CumBiochN, NLAYR)
+     &        BiochData % CumBiochC, BiochData % CumBiochN,
+     &        BiochData % DeltaPH, SorbNH4_L, NLAYR)
         END IF
 
 !***********************************************************************
@@ -353,7 +420,8 @@
           CALL OpBiochar (CONTROL, ISWITCH,
      &        0.0, 0.0, BiochCL_L, BiochCS_L, BiochN_L,
      &        dBiochC, BiochData % NApBioch,
-     &        BiochData % CumBiochC, BiochData % CumBiochN, NLAYR)
+     &        BiochData % CumBiochC, BiochData % CumBiochN,
+     &        BiochData % DeltaPH, SorbNH4_L, NLAYR)
         END IF
 
       END IF  !DYNAMIC
