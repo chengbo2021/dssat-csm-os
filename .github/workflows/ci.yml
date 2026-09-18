@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [ develop, master, 'claude/**' ]
+  pull_request:
+    branches: [ develop, master ]
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gfortran cmake make
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: |
+          cd build
+          make -j$(nproc) 2>&1 | tee build.log
+          # Fail if binary was not produced
+          test -f dscsm048
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build/build.log
+
+  validate-biochar-output:
+    name: Validate BIOCHAR.OUT checker
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run BIOCHAR.OUT syntax check (unit test of checker itself)
+        run: |
+          python tests/biochar/check_biochar_out.py --self-test
