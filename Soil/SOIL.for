@@ -183,6 +183,13 @@ C=====================================================================
      &    SomLit, SomLitC, SomLitE, SSOMC)                !Output
       ENDIF
 
+!     Biochar priming effect: scale SOM-N mineralization before SoilNi
+      IF (DYNAMIC .EQ. RATE) THEN
+        DO L = 1, SOILPROP % NLAYR
+          MNR(L, N) = MNR(L, N) * BiochData % BC_PrimeFac(L)
+        END DO
+      END IF
+
 !     Inorganic N (formerly NTRANS)
       CALL SoilNi (CONTROL, ISWITCH,
      &    BiochData % dSorbNH4,                           !Input (biochar)

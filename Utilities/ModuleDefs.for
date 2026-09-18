@@ -326,6 +326,8 @@ C             CHP Added TRTNUM to CONTROL variable.
         REAL, DIMENSION(NL) :: SorbP     !Sorbed P pool   (kg P/ha)
         REAL, DIMENSION(NL) :: SorbK     !Sorbed K pool   (kg K/ha)
         REAL, DIMENSION(NL) :: dSorbNH4  !Net NH4 sorption today (+ve=sorb)
+        !  Priming effect multiplier on SOM-N mineralization
+        REAL, DIMENSION(NL) :: BC_PrimeFac !SOM decomp multiplier (1=no effect)
       END TYPE BiochType
 
 !======================================================================

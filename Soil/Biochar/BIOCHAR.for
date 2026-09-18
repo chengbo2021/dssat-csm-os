@@ -119,6 +119,12 @@
 !     Maximum biochar-induced pH increase (prevents runaway in sandy soils)
       REAL, PARAMETER :: PH_MAX_DLT = 2.0
 
+!     Priming effect parameters
+!     Empirical SOM decomp multiplier per unit biochar mass fraction
+!     (Maestrini et al. 2015 meta-analysis: ~5-15% at typical rates)
+      REAL, PARAMETER :: PRIME_COEF = 10.0   !multiplier per kg/kg fraction
+      REAL, PARAMETER :: PRIME_CAP  = 0.20   !maximum priming magnitude
+
 !     NH4 sorption parameters
 !     Max NH4 sorption per kg biochar DM (Chen et al. 2019 review)
       REAL, PARAMETER :: SORP_F_NH4 = 0.005  !kg N / kg biochar
@@ -183,10 +189,11 @@
           BiochData % BiochN(L)  = 0.0
           BiochData % DDUL_BC(L)  = 0.0
           BiochData % DeltaPH(L)  = 0.0
-          BiochData % SorbNH4(L)  = 0.0
-          BiochData % SorbP(L)    = 0.0
-          BiochData % SorbK(L)    = 0.0
-          BiochData % dSorbNH4(L) = 0.0
+          BiochData % SorbNH4(L)    = 0.0
+          BiochData % SorbP(L)      = 0.0
+          BiochData % SorbK(L)      = 0.0
+          BiochData % dSorbNH4(L)   = 0.0
+          BiochData % BC_PrimeFac(L) = 1.0
         END DO
         DO L = 1, NL
           SorbNH4_L(L) = 0.0
@@ -362,6 +369,17 @@
           SorbNH4_L(L)            = SorbNH4_L(L) + dSorb_L
           BiochData % SorbNH4(L)  = SorbNH4_L(L)
           BiochData % dSorbNH4(L) = dSorb_L
+
+!         Priming effect: proportional to biochar mass fraction
+!         Positive priming (stimulated SOM decomp) common at typical rates
+          IF (BD(L) .GT. 0.0 .AND. DLAYR(L) .GT. 0.0) THEN
+            BiochData % BC_PrimeFac(L) =
+     &          1.0 + MIN(PRIME_COEF * BC_mass_frac, PRIME_CAP)
+            BiochData % BC_PrimeFac(L) =
+     &          MAX(BiochData % BC_PrimeFac(L), 1.0 - PRIME_CAP)
+          ELSE
+            BiochData % BC_PrimeFac(L) = 1.0
+          END IF
 
 !         Update output data type
           BiochData % BiochCL(L) = BiochCL_L(L)
